@@ -23,7 +23,7 @@ jobs:
       
       - name: Run Bot Script
         env:
-          REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+          REPLICATE_API_TOKEN: ${{ secrets.HF_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         run: python bot.py
