@@ -2,191 +2,93 @@ import os
 import random
 import time
 import requests
-from datetime import datetime
 from PIL import Image
-import replicate
 
+TOGETHER_API_KEY = "31a19325791febd8b7a6d91d904961e2c2b7c317cdab95cedf0caa352c762519"
 IG_USER_ID = os.getenv("IG_USER_ID")
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
-REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 
-# Validate required environment variables
-if not REPLICATE_API_TOKEN:
-    print("[ERROR] REPLICATE_API_TOKEN not found in environment variables!")
-    print("[ERROR] Please add REPLICATE_API_TOKEN to GitHub Secrets")
-    exit(1)
-
-if not IG_USER_ID:
-    print("[ERROR] IG_USER_ID not found in environment variables!")
-    exit(1)
-
-if not ACCESS_TOKEN:
-    print("[ERROR] ACCESS_TOKEN not found in environment variables!")
-    exit(1)
-
-# Top 15 Famous Anime Characters
 ANIME_CHARACTERS = [
-    "Asuna from Sword Art Online",
-    "Rem from Re:Zero",
-    "Mikasa from Attack on Titan",
-    "Zero Two from Darling in the Franxx",
-    "Emilia from Re:Zero",
-    "Ram from Re:Zero",
-    "Aqua from Konosuba",
-    "Mitsuri from Demon Slayer",
-    "Daki from Demon Slayer",
-    "Nobara from Jujutsu Kaisen",
-    "Mitsuri Kanroji",
-    "Yor Forger from Spy x Family",
-    "Chizuru from Rent-a-Girlfriend",
-    "Yuna from Is It Wrong to Try to Pick Up Girls",
-    "Saber from Fate series"
+    "Asuna from Sword Art Online", "Rem from Re:Zero", "Mikasa from Attack on Titan",
+    "Zero Two from Darling in the Franxx", "Emilia from Re:Zero", "Ram from Re:Zero",
+    "Aqua from Konosuba", "Mitsuri from Demon Slayer", "Yor Forger from Spy x Family",
+    "Nobara from Jujutsu Kaisen", "Chizuru from Rent-a-Girlfriend", "Saber from Fate"
 ]
 
-# Romantic Poses
-ROMANTIC_POSES = [
-    "hand near lips in a shy kiss gesture",
-    "hand on cheek with blush",
-    "both hands near face looking surprised",
-    "touching hair seductively",
-    "hand on heart emotional pose",
-    "fingers together shy pose",
-    "winking with flirty hand gesture",
-    "looking back over shoulder romantically",
-    "hand on chest with blush",
-    "walking with wind blowing hair"
+POSES = [
+    "jumping with happiness", "tilting head curiously", "hand on cheek with blush",
+    "spinning and dancing joyfully", "sitting cross-legged playfully", "winking flirty",
+    "looking back over shoulder romantically", "touching hair seductively"
 ]
 
-# Cute Poses
-CUTE_POSES = [
-    "lying down innocently on soft bed",
-    "hugging a pillow adorably",
-    "leaning against wall relaxed",
-    "sitting cross-legged playfully",
-    "jumping with happiness",
-    "tilting head curiously",
-    "tongue out playfully mischievous",
-    "making peace sign cheerfully",
-    "arm stretched yawning sleepily",
-    "sitting on knees innocently",
-    "peeking from behind shyly",
-    "spinning and dancing joyfully"
-]
-
-# Anime Universe Settings/Backgrounds
-ANIME_BACKGROUNDS = [
-    "Tokyo city street with neon lights and modern buildings",
-    "Isekai fantasy village with magical atmosphere",
-    "High school hallway with anime aesthetic",
-    "Beautiful beach resort at sunset",
-    "Enchanted forest with magical trees and glowing lights",
-    "Night festival with paper lanterns",
-    "Magical girl academy with pink and white theme",
-    "Demon slayer mountain temple at dawn",
-    "Cafe with cozy indoor atmosphere and warm lighting",
-    "Cherry blossom garden in full bloom at night",
-    "Starry night rooftop overlooking city",
-    "Ancient shrine with traditional Japanese architecture"
-]
-
-# Different Anime Styles/Clothing
-ANIME_STYLES = [
-    "wearing school uniform blazer and skirt",
-    "wearing casual modern street clothes",
-    "wearing traditional Japanese kimono",
-    "wearing fantasy adventure armor",
-    "wearing magical girl transformation dress",
-    "wearing elegant ball gown",
-    "wearing casual hoodie and jeans",
-    "wearing shrine maiden outfit",
-    "wearing swimsuit at beach",
-    "wearing traditional maid outfit",
-    "wearing magical academy uniform",
-    "wearing demon slayer corps uniform"
+BACKGROUNDS = [
+    "Tokyo city street with neon lights", "Beautiful beach resort at sunset",
+    "Cherry blossom garden at night", "Starry night rooftop overlooking city",
+    "Enchanted forest with magical trees", "High school hallway anime aesthetic",
+    "Cafe with cozy indoor atmosphere", "Night festival with paper lanterns"
 ]
 
 BASE_QUALITY = "masterpiece, best quality, ultra detailed, 8k resolution, 4k wallpaper, sharp focus, aesthetic, anime style illustration, beautiful face, perfect features"
 
-def generate_random_anime_prompt():
-    character = random.choice(ANIME_CHARACTERS)
-    
-    # Random mix of romantic and cute poses
-    if random.choice([True, False]):
-        pose = random.choice(ROMANTIC_POSES)
-    else:
-        pose = random.choice(CUTE_POSES)
-    
-    background = random.choice(ANIME_BACKGROUNDS)
-    style = random.choice(ANIME_STYLES)
-    
-    prompt = f"{BASE_QUALITY}, {character}, {style}, {pose}, {background}, modest fully-covered clothing where appropriate, clean detailed background, ultra high resolution, anime girl"
-    
-    return prompt
-
 def generate_image():
-    prompt = generate_random_anime_prompt()
-    print(f"[INFO] Selected Prompt: {prompt}")
+    character = random.choice(ANIME_CHARACTERS)
+    pose = random.choice(POSES)
+    bg = random.choice(BACKGROUNDS)
     
-    # Set API token
-    os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_TOKEN
+    prompt = f"{BASE_QUALITY}, {character}, {pose}, {bg}, anime girl, modest fully-covered clothing, ultra high resolution"
+    print(f"[INFO] Selected Prompt: {prompt[:100]}...")
     
-    image = None
     for attempt in range(3):
         try:
-            print(f"[INFO] Attempt {attempt + 1}/3 - Generating image with Replicate...")
+            print(f"[INFO] Attempt {attempt + 1}/3 - Generating image with Together AI...")
             
-            # Using Stable Diffusion XL - Instagram size (1080x1350)
-            output = replicate.run(
-                "stability-ai/sdxl",
-                input={
+            response = requests.post(
+                "https://api.together.xyz/inference",
+                headers={"Authorization": f"Bearer {TOGETHER_API_KEY}"},
+                json={
+                    "model": "stabilityai/stable-diffusion-xl-base-1.0",
                     "prompt": prompt,
                     "negative_prompt": "nsfw, nude, bad anatomy, bad hands, low resolution, blurry, watermark, signature, text, cropped, extra limbs",
                     "width": 1080,
                     "height": 1350,
-                    "num_outputs": 1,
-                    "scheduler": "KarrasDPM",
-                    "num_inference_steps": 25,
-                    "guidance_scale": 7.5
-                }
+                    "steps": 25,
+                    "seed": random.randint(0, 999999)
+                },
+                timeout=120
             )
             
-            if output and len(output) > 0:
-                image_url = output[0]
-                print(f"[SUCCESS] Image generated: {image_url}")
-                
-                # Download image
-                img_response = requests.get(image_url, timeout=30)
-                if img_response.status_code == 200:
-                    with open("generated_anime.jpg", "wb") as f:
-                        f.write(img_response.content)
-                    print("[INFO] Image downloaded successfully")
-                    break
+            if response.status_code == 200:
+                data = response.json()
+                if "output" in data and "choices" in data["output"]:
+                    img_url = data["output"]["choices"][0]["image_url"]
+                    print(f"[SUCCESS] Image generated: {img_url}")
                     
+                    img_response = requests.get(img_url, timeout=30)
+                    if img_response.status_code == 200:
+                        with open("generated_anime.jpg", "wb") as f:
+                            f.write(img_response.content)
+                        print("[INFO] Image downloaded successfully")
+                        return True
+            else:
+                print(f"[ERROR] Attempt {attempt + 1} failed: Status {response.status_code}")
+                error_data = response.json() if response.text else {}
+                print(f"[ERROR] Details: {error_data}")
+                
         except Exception as e:
             print(f"[ERROR] Attempt {attempt + 1} failed: {str(e)}")
             if attempt < 2:
                 wait_time = (attempt + 1) * 10
                 print(f"[INFO] Retrying in {wait_time} seconds...")
                 time.sleep(wait_time)
-            
-    if not os.path.exists("generated_anime.jpg"):
-        print("[FAILED] Image generation failed after all attempts")
-        return False
-        
-    # Save with Instagram dimensions
-    try:
-        img = Image.open("generated_anime.jpg")
-        img.save("final_ig_post.jpg", quality=100)
-        print("[SUCCESS] Image ready for Instagram (1080x1350)")
-        return True
-    except Exception as e:
-        print(f"[ERROR] Failed to process image: {str(e)}")
-        return False
+    
+    print("[FAILED] Image generation failed after all attempts")
+    return False
 
 def upload_image_for_public_url():
     try:
-        with open("final_ig_post.jpg", "rb") as file:
-            response = requests.post("https://tmpfiles.org/api/v1/upload", files={"file": file}, timeout=30)
+        with open("generated_anime.jpg", "rb") as f:
+            response = requests.post("https://tmpfiles.org/api/v1/upload", files={"file": f}, timeout=30)
+        
         data = response.json()
         if response.status_code == 200 and "data" in data:
             public_url = data["data"]["url"].replace("tmpfiles.org/", "tmpfiles.org/dl/")
