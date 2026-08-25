@@ -61,23 +61,39 @@ def generate_random_anime_prompt():
     )
     return final_prompt
 
-# --- STEP 2: GENERATE VIA OFFICIAL HUGGINGFACE CLIENT ---
+# --- STEP 2: GENERATE VIA HUGGING FACE (WITH COLD-START RETRY) ---
 def generate_image():
     prompt = generate_random_anime_prompt()
     print(f"[{datetime.now()}] Selected Prompt:\n{prompt}\n")
     
     print("Connecting to Hugging Face Client...")
-    client = InferenceClient("cagliostrolab/animagine-xl-3.1", token=HF_TOKEN)
+    client = InferenceClient(token=HF_TOKEN)
     
-    try:
-        image = client.text_to_image(
-            prompt=prompt,
-            negative_prompt="nsfw, nude, bad anatomy, bad hands, low resolution, blurry, watermark, signature, text, cropped",
-            width=896,
-            height=1152
-        )
-    except Exception as e:
-        print(f"Generation error: {e}")
+    max_retries = 3
+    image = None
+    
+    for attempt in range(max_retries):
+        try:
+            print(f"Generation attempt {attempt + 1}...")
+            image = client.text_to_image(
+                prompt=prompt,
+                model="cagliostrolab/animagine-xl-3.1",
+                negative_prompt="nsfw, nude, bad anatomy, bad hands, low resolution, blurry, watermark, signature, text, cropped",
+                width=896,
+                height=1152
+            )
+            if image:
+                break
+        except Exception as e:
+            print(f"Attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                print("Model might be loading (Cold Start). Waiting 15 seconds before retry...")
+                time.sleep(15)
+            else:
+                print("All generation retries failed.")
+                return False
+                
+    if not image:
         return False
         
     local_filename = "generated_anime.jpg"
@@ -126,7 +142,7 @@ def publish_to_instagram():
     container_url = f"https://graph.facebook.com/v18.0/{IG_USER_ID}/media"
     payload = {
         'image_url': image_url,
-        'caption': "Rate this 4K anime masterpiece! 🌸✨\n\n#animeart #aiart #naruto #animelover #otaku #kawaii #animegirl",
+        'caption': "Rate this 4K anime masterpiece! 🌸✨\n\n#animeart #aiart #animelover #otaku #kawaii #animegirl",
         'access_token': ACCESS_TOKEN
     }
     
