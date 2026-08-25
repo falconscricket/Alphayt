@@ -9,35 +9,43 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 IG_USER_ID = os.getenv("IG_USER_ID")
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 
+# Character list with specific facial/appearance features for accurate generation
 ANIME_CHARACTERS = [
-    "Asuna from Sword Art Online", "Rem from Re:Zero", "Mikasa from Attack on Titan",
-    "Zero Two from Darling in the Franxx", "Emilia from Re:Zero", "Ram from Re:Zero",
-    "Aqua from Konosuba", "Mitsuri from Demon Slayer", "Yor Forger from Spy x Family",
-    "Nobara from Jujutsu Kaisen", "Chizuru from Rent-a-Girlfriend", "Saber from Fate"
+    "Hinata Hyuga from Naruto with long flowing dark indigo hair and glowing pale lavender eyes",
+    "Asuna from Sword Art Online with long chestnut-brown hair and warm hazel eyes",
+    "Rem from Re:Zero with distinctive light blue bob cut covering one eye and bright blue eyes",
+    "Mikasa from Attack on Titan with sleek black hair and sharp grey eyes",
+    "Zero Two from Darling in the Franxx with iconic long pink hair, red horns, and striking cyan eyes",
+    "Yor Forger from Spy x Family with long black hair, crimson red eyes, and elegant hairband",
+    "Mitsuri Kanroji from Demon Slayer with striking long pink-to-green braided hair and emerald green eyes",
+    "Saber from Fate with neatly braided blonde hair and striking green eyes"
 ]
 
-POSES = [
-    "jumping with happiness", "tilting head curiously", "hand on cheek with blush",
-    "spinning and dancing joyfully", "sitting cross-legged playfully", "winking flirty",
-    "looking back over shoulder romantically", "touching hair seductively"
+# Random seductive and alluring poses
+SEDUCTIVE_POSES = [
+    "sitting on a luxury sofa, leaning forward slightly with an alluring teasing smirk, intense eye contact",
+    "looking back over her shoulder seductively with a soft captivating smile, dramatic cinematic lighting",
+    "touching her hair sensually while giving a bold, magnetic, and flirtatious gaze to the camera",
+    "leaning against a wall with legs crossed provocatively, soft alluring expression, cinematic shadows",
+    "stretching gracefully with a warm seductive mood, soft warm evening ambient lighting"
 ]
 
 BACKGROUNDS = [
-    "Tokyo city street with neon lights", "Beautiful beach resort at sunset",
-    "Cherry blossom garden at night", "Starry night rooftop overlooking city",
-    "Enchanted forest with magical trees", "High school hallway anime aesthetic",
-    "Cafe with cozy indoor atmosphere", "Night festival with paper lanterns"
+    "cozy luxury room background with warm glowing ambient lamps and beautiful bokeh",
+    "Tokyo city night street background with soft blurred neon lights and aesthetic depth of field",
+    "luxury modern bedroom with soft moody lighting and warm atmosphere",
+    "starlit rooftop balcony overlooking a city skyline with soft glowing lights"
 ]
 
-BASE_QUALITY = "masterpiece, best quality, ultra detailed, 8k resolution, 4k wallpaper, sharp focus, aesthetic, anime style illustration, beautiful face, perfect features"
+BASE_QUALITY = "masterpiece, best quality, ultra-detailed vertical portrait, 8k resolution, sharp focus, seductive and alluring mood, cinematic dramatic lighting, flawless smooth skin, flawless anatomy, zero artifacts, no watermarks"
 
 def generate_image():
     character = random.choice(ANIME_CHARACTERS)
-    pose = random.choice(POSES)
+    pose = random.choice(SEDUCTIVE_POSES)
     bg = random.choice(BACKGROUNDS)
     
-    prompt = f"{BASE_QUALITY}, {character}, {pose}, {bg}, anime girl, modest fully-covered clothing, ultra high resolution"
-    print(f"[INFO] Selected Prompt: {prompt[:100]}...")
+    prompt = f"{BASE_QUALITY}, {character}, {pose}, in {bg}, sensual fashion, form-fitting stylish clothing"
+    print(f"[INFO] Selected Prompt: {prompt[:120]}...")
     
     client = InferenceClient(
         model="stabilityai/stable-diffusion-xl-base-1.0",
@@ -50,11 +58,11 @@ def generate_image():
             
             image = client.text_to_image(prompt=prompt)
             
-            # FIXED: Convert to RGB and force JPEG saving format to prevent format errors
+            # Convert to RGB and force JPEG saving
             image = image.convert("RGB")
             image.save("generated_anime.jpg", "JPEG")
             
-            print("[SUCCESS] Image generated and saved as JPEG!")
+            print("[SUCCESS] Seductive image generated and saved as JPEG!")
             return True
                 
         except Exception as e:
@@ -69,16 +77,21 @@ def generate_image():
 
 def upload_image_for_public_url():
     try:
+        # Changed to catbox.moe for reliable direct image hosting that Instagram accepts
         with open("generated_anime.jpg", "rb") as f:
-            response = requests.post("https://tmpfiles.org/api/v1/upload", files={"file": f}, timeout=30)
+            response = requests.post(
+                "https://catbox.moe/user/api.php",
+                data={"reqtype": "fileupload"},
+                files={"fileToUpload": f},
+                timeout=30
+            )
         
-        data = response.json()
-        if response.status_code == 200 and "data" in data:
-            public_url = data["data"]["url"].replace("tmpfiles.org/", "tmpfiles.org/dl/")
-            print(f"[SUCCESS] Image uploaded: {public_url}")
+        if response.status_code == 200 and response.text.startswith("http"):
+            public_url = response.text.strip()
+            print(f"[SUCCESS] Image uploaded to Catbox: {public_url}")
             return public_url
         else:
-            print(f"[ERROR] Upload failed: {data}")
+            print(f"[ERROR] Upload failed: {response.text}")
             return None
     except Exception as e:
         print(f"[ERROR] Failed to upload image: {str(e)}")
@@ -98,7 +111,7 @@ def publish_to_instagram():
 
     try:
         container_url = f"https://graph.facebook.com/v18.0/{IG_USER_ID}/media"
-        caption = "Rate this 4K anime masterpiece! 🌸✨\n\n#animeart #aiart #animelover #otaku #kawaii #animegirl"
+        caption = "Rate this gorgeous aesthetic masterpiece! ✨🔥\n\n#animeart #aiart #animelover #seductiveanime #aesthetic #animegirl"
         
         print("[INFO] Creating Instagram media container...")
         res = requests.post(
