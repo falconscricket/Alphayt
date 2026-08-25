@@ -5,7 +5,7 @@ import requests
 from PIL import Image
 from huggingface_hub import InferenceClient
 
-HF_TOKEN = "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"
+HF_TOKEN = os.getenv("HF_TOKEN")
 IG_USER_ID = os.getenv("IG_USER_ID")
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 
