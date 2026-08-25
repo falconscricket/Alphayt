@@ -135,16 +135,16 @@ def generate_image():
         try:
             print(f"[INFO] Attempt {attempt + 1}/3 - Generating image with Replicate...")
             
-            # Using latest working Stable Diffusion XL version
+            # Using Stable Diffusion XL - Instagram size (1080x1350)
             output = replicate.run(
-                "stability-ai/sdxl:d830ba5aae9e0b34b87f2d716e03514e39d4e9b0da5ff37bb05d9dea7cf48b63",
+                "stability-ai/sdxl",
                 input={
                     "prompt": prompt,
                     "negative_prompt": "nsfw, nude, bad anatomy, bad hands, low resolution, blurry, watermark, signature, text, cropped, extra limbs",
-                    "width": 896,
-                    "height": 1152,
+                    "width": 1080,
+                    "height": 1350,
                     "num_outputs": 1,
-                    "scheduler": "DPMSolverMultistep",
+                    "scheduler": "KarrasDPM",
                     "num_inference_steps": 25,
                     "guidance_scale": 7.5
                 }
@@ -173,14 +173,14 @@ def generate_image():
         print("[FAILED] Image generation failed after all attempts")
         return False
         
-    # Resize for Instagram
+    # Save with Instagram dimensions
     try:
         img = Image.open("generated_anime.jpg")
-        img.resize((1080, 1350), Image.Resampling.LANCZOS).save("final_ig_post.jpg", quality=100)
-        print("[SUCCESS] Image resized for Instagram")
+        img.save("final_ig_post.jpg", quality=100)
+        print("[SUCCESS] Image ready for Instagram (1080x1350)")
         return True
     except Exception as e:
-        print(f"[ERROR] Failed to resize image: {str(e)}")
+        print(f"[ERROR] Failed to process image: {str(e)}")
         return False
 
 def upload_image_for_public_url():
