@@ -39,23 +39,18 @@ def generate_image():
     prompt = f"{BASE_QUALITY}, {character}, {pose}, {bg}, anime girl, modest fully-covered clothing, ultra high resolution"
     print(f"[INFO] Selected Prompt: {prompt[:100]}...")
     
-    # Initialize the official Hugging Face Inference Client
+    # Fixed InferenceClient initialization with explicit model and token
     client = InferenceClient(
-        provider="hf-inference",
-        api_key=HF_TOKEN,
+        model="stabilityai/stable-diffusion-xl-base-1.0",
+        token=HF_TOKEN,
     )
     
     for attempt in range(3):
         try:
             print(f"[INFO] Attempt {attempt + 1}/3 - Generating image with Hugging Face...")
             
-            # Use the official text_to_image method
-            image = client.text_to_image(
-                prompt=prompt,
-                model="stabilityai/stable-diffusion-xl-base-1.0"
-            )
+            image = client.text_to_image(prompt=prompt)
             
-            # Save the returned PIL Image
             image.save("generated_anime.jpg")
             print("[SUCCESS] Image generated and saved!")
             return True
@@ -144,4 +139,3 @@ def publish_to_instagram():
 
 if __name__ == "__main__":
     publish_to_instagram()
-    
