@@ -75,9 +75,9 @@ def generate_image():
         try:
             print(f"[INFO] Attempt {attempt + 1}/3 - Generating image with Replicate...")
             
-            # Using Animagine XL 3.1 via Replicate
+            # Using Stable Diffusion XL (more reliable and free tier friendly)
             output = replicate.run(
-                "cagliostrolab/animagine-xl-3.1:0bae911e474a0210655ba270d5846d3b9ef144fe537eb411506a9a326421fea58",
+                "stability-ai/sdxl:39ed52f2a60c3b36b96384b26f1ea0d2f189f60b848c4aa73c60860d3de47e5c",
                 input={
                     "prompt": prompt,
                     "negative_prompt": "nsfw, nude, bad anatomy, bad hands, low resolution, blurry, watermark, signature, text, cropped",
