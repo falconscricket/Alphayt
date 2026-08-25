@@ -5,7 +5,7 @@ import requests
 from datetime import datetime
 from PIL import Image
 
-# --- CONFIGURATION (Environment Variables from Railway / .env) ---
+# --- CONFIGURATION (Environment Variables from GitHub Secrets) ---
 IG_USER_ID = os.getenv("IG_USER_ID")
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 HF_TOKEN = os.getenv("HF_TOKEN")
@@ -61,7 +61,7 @@ def generate_random_anime_prompt():
     )
     return final_prompt
 
-# --- STEP 2: GENERATE 4K ANIME IMAGE VIA DIRECT HUGGING FACE API (WITH RETRY) ---
+# --- STEP 2: GENERATE 4K ANIME IMAGE VIA HUGGING FACE API (WITH RETRY) ---
 def generate_image():
     prompt = generate_random_anime_prompt()
     print(f"[{datetime.now()}] Selected Prompt:\n{prompt}\n")
@@ -79,7 +79,6 @@ def generate_image():
         }
     }
     
-    # Retry mechanism to handle temporary network/DNS drops on cloud servers
     max_retries = 3
     response = None
     
@@ -100,14 +99,12 @@ def generate_image():
         print(f"API Error Response: {response.text if response else 'No Response'}")
         return False
         
-    # Save original high-res image
     local_filename = "generated_anime.jpg"
     with open(local_filename, "wb") as f:
         f.write(response.content)
         
     print("Image Generated Successfully!")
     
-    # Resize to Perfect Instagram Portrait Ratio (1080x1350 / 4:5)
     img = Image.open(local_filename)
     img_resized = img.resize((1080, 1350), Image.Resampling.LANCZOS)
     img_resized.save("final_ig_post.jpg", quality=100)
@@ -136,19 +133,16 @@ def publish_to_instagram():
         print("Error: Missing Secrets! (IG_USER_ID, ACCESS_TOKEN, or HF_TOKEN)")
         return
 
-    # 1. Generate local 4K Image
     success = generate_image()
     if not success:
         print("Image generation failed.")
         return
     
-    # 2. Get Public Direct URL
     image_url = upload_image_for_public_url()
     if not image_url:
         print("Posting cancelled due to image upload error.")
         return
 
-    # 3. Create Container
     print("Sending post request to Instagram Graph API...")
     container_url = f"https://graph.facebook.com/v18.0/{IG_USER_ID}/media"
     payload = {
@@ -165,11 +159,8 @@ def publish_to_instagram():
         return
         
     creation_id = response['id']
-    
-    # Wait 10 seconds for Instagram servers to fetch the image
     time.sleep(10)
     
-    # 4. Publish Container
     publish_url = f"https://graph.facebook.com/v18.0/{IG_USER_ID}/media_publish"
     publish_payload = {
         'creation_id': creation_id,
@@ -186,3 +177,4 @@ def publish_to_instagram():
 
 if __name__ == "__main__":
     publish_to_instagram()
+    
