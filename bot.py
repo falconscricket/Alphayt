@@ -4,6 +4,7 @@ import time
 import requests
 from datetime import datetime
 from PIL import Image
+from huggingface_hub import InferenceClient
 
 # --- CONFIGURATION (Environment Variables from GitHub Secrets) ---
 IG_USER_ID = os.getenv("IG_USER_ID")
@@ -48,7 +49,6 @@ POSES_AND_SETTINGS = [
 ]
 
 def generate_random_anime_prompt():
-    """Builds a randomized 4K prompt from components."""
     hair_style = random.choice(HAIR_STYLES)
     hair_color = random.choice(HAIR_COLORS)
     dress = random.choice(DRESSES)
@@ -61,49 +61,27 @@ def generate_random_anime_prompt():
     )
     return final_prompt
 
-# --- STEP 2: GENERATE 4K ANIME IMAGE VIA NEW HUGGING FACE ROUTER API ---
+# --- STEP 2: GENERATE VIA OFFICIAL HUGGINGFACE CLIENT ---
 def generate_image():
     prompt = generate_random_anime_prompt()
     print(f"[{datetime.now()}] Selected Prompt:\n{prompt}\n")
     
-    print("Calling Hugging Face Router API (Animagine XL 3.1)...")
-    # Updated to the new Hugging Face serverless router endpoint
-    API_URL = "https://router.huggingface.co/hf-inference/models/cagliostrolab/animagine-xl-3.1"
-    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+    print("Connecting to Hugging Face Client...")
+    client = InferenceClient("cagliostrolab/animagine-xl-3.1", token=HF_TOKEN)
     
-    payload = {
-        "inputs": prompt,
-        "parameters": {
-            "negative_prompt": "nsfw, nude, bad anatomy, bad hands, low resolution, blurry, watermark, signature, text, cropped",
-            "width": 896,
-            "height": 1152
-        }
-    }
-    
-    max_retries = 3
-    response = None
-    
-    for attempt in range(max_retries):
-        try:
-            response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
-            break
-        except requests.exceptions.RequestException as e:
-            print(f"Connection attempt {attempt + 1} failed: {e}")
-            if attempt < max_retries - 1:
-                print("Retrying in 5 seconds...")
-                time.sleep(5)
-            else:
-                print("All connection retries failed.")
-                return False
-
-    if not response or response.status_code != 200:
-        print(f"API Error Response: {response.text if response else 'No Response'}")
+    try:
+        image = client.text_to_image(
+            prompt=prompt,
+            negative_prompt="nsfw, nude, bad anatomy, bad hands, low resolution, blurry, watermark, signature, text, cropped",
+            width=896,
+            height=1152
+        )
+    except Exception as e:
+        print(f"Generation error: {e}")
         return False
         
     local_filename = "generated_anime.jpg"
-    with open(local_filename, "wb") as f:
-        f.write(response.content)
-        
+    image.save(local_filename, quality=95)
     print("Image Generated Successfully!")
     
     img = Image.open(local_filename)
@@ -131,7 +109,7 @@ def upload_image_for_public_url():
 # --- STEP 4: PUBLISH TO INSTAGRAM ---
 def publish_to_instagram():
     if not IG_USER_ID or not ACCESS_TOKEN or not HF_TOKEN:
-        print("Error: Missing Secrets! (IG_USER_ID, ACCESS_TOKEN, or HF_TOKEN)")
+        print("Error: Missing Secrets!")
         return
 
     success = generate_image()
@@ -178,3 +156,4 @@ def publish_to_instagram():
 
 if __name__ == "__main__":
     publish_to_instagram()
+    
