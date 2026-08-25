@@ -135,9 +135,9 @@ def generate_image():
         try:
             print(f"[INFO] Attempt {attempt + 1}/3 - Generating image with Replicate...")
             
-            # Using Stable Diffusion XL (more reliable and free tier friendly)
+            # Using latest working Stable Diffusion XL version
             output = replicate.run(
-                "stability-ai/sdxl:39ed52f2a60c3b36b96384b26f1ea0d2f189f60b848c4aa73c60860d3de47e5c",
+                "stability-ai/sdxl:d830ba5aae9e0b34b87f2d716e03514e39d4e9b0da5ff37bb05d9dea7cf48b63",
                 input={
                     "prompt": prompt,
                     "negative_prompt": "nsfw, nude, bad anatomy, bad hands, low resolution, blurry, watermark, signature, text, cropped, extra limbs",
