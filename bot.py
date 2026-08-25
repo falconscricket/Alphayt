@@ -10,6 +10,20 @@ IG_USER_ID = os.getenv("IG_USER_ID")
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 
+# Validate required environment variables
+if not REPLICATE_API_TOKEN:
+    print("[ERROR] REPLICATE_API_TOKEN not found in environment variables!")
+    print("[ERROR] Please add REPLICATE_API_TOKEN to GitHub Secrets")
+    exit(1)
+
+if not IG_USER_ID:
+    print("[ERROR] IG_USER_ID not found in environment variables!")
+    exit(1)
+
+if not ACCESS_TOKEN:
+    print("[ERROR] ACCESS_TOKEN not found in environment variables!")
+    exit(1)
+
 BASE_QUALITY = "masterpiece, best quality, ultra detailed, 8k resolution, 4k wallpaper, sharp focus, aesthetic, anime style illustration, 1girl"
 
 HAIR_STYLES = [
