@@ -61,7 +61,7 @@ def generate_random_anime_prompt():
     )
     return final_prompt
 
-# --- STEP 2: GENERATE 4K ANIME IMAGE VIA DIRECT HUGGING FACE API ---
+# --- STEP 2: GENERATE 4K ANIME IMAGE VIA DIRECT HUGGING FACE API (WITH RETRY) ---
 def generate_image():
     prompt = generate_random_anime_prompt()
     print(f"[{datetime.now()}] Selected Prompt:\n{prompt}\n")
@@ -79,10 +79,25 @@ def generate_image():
         }
     }
     
-    response = requests.post(API_URL, headers=headers, json=payload)
+    # Retry mechanism to handle temporary network/DNS drops on cloud servers
+    max_retries = 3
+    response = None
     
-    if response.status_code != 200:
-        print(f"API Error Response: {response.text}")
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
+            break
+        except requests.exceptions.RequestException as e:
+            print(f"Connection attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                print("Retrying in 5 seconds...")
+                time.sleep(5)
+            else:
+                print("All connection retries failed.")
+                return False
+
+    if not response or response.status_code != 200:
+        print(f"API Error Response: {response.text if response else 'No Response'}")
         return False
         
     # Save original high-res image
@@ -171,4 +186,3 @@ def publish_to_instagram():
 
 if __name__ == "__main__":
     publish_to_instagram()
-stagram()
