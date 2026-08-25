@@ -39,7 +39,6 @@ def generate_image():
     prompt = f"{BASE_QUALITY}, {character}, {pose}, {bg}, anime girl, modest fully-covered clothing, ultra high resolution"
     print(f"[INFO] Selected Prompt: {prompt[:100]}...")
     
-    # Fixed InferenceClient initialization with explicit model and token
     client = InferenceClient(
         model="stabilityai/stable-diffusion-xl-base-1.0",
         token=HF_TOKEN,
@@ -51,8 +50,11 @@ def generate_image():
             
             image = client.text_to_image(prompt=prompt)
             
-            image.save("generated_anime.jpg")
-            print("[SUCCESS] Image generated and saved!")
+            # FIXED: Convert to RGB and force JPEG saving format to prevent format errors
+            image = image.convert("RGB")
+            image.save("generated_anime.jpg", "JPEG")
+            
+            print("[SUCCESS] Image generated and saved as JPEG!")
             return True
                 
         except Exception as e:
