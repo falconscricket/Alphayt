@@ -4,9 +4,8 @@ import time
 import requests
 from datetime import datetime
 from PIL import Image
-from huggingface_hub import InferenceClient
 
-# --- CONFIGURATION (From GitHub Secrets) ---
+# --- CONFIGURATION (Environment Variables from Railway / .env) ---
 IG_USER_ID = os.getenv("IG_USER_ID")
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 HF_TOKEN = os.getenv("HF_TOKEN")
@@ -62,34 +61,45 @@ def generate_random_anime_prompt():
     )
     return final_prompt
 
-# --- STEP 2: GENERATE 4K ANIME IMAGE VIA HUGGING FACE ---
+# --- STEP 2: GENERATE 4K ANIME IMAGE VIA DIRECT HUGGING FACE API ---
 def generate_image():
     prompt = generate_random_anime_prompt()
     print(f"[{datetime.now()}] Selected Prompt:\n{prompt}\n")
     
-    print("Connecting to Hugging Face Model (Animagine XL 3.1)...")
-    client = InferenceClient("cagliostrolab/animagine-xl-3.1", token=HF_TOKEN)
+    print("Calling Hugging Face API directly (Animagine XL 3.1)...")
+    API_URL = "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.1"
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
     
-    # Generate image (Standard High Res base)
-    image = client.text_to_image(
-        prompt=prompt,
-        negative_prompt="nsfw, nude, bad anatomy, bad hands, low resolution, blurry, watermark, signature, text, cropped",
-        width=896,
-        height=1152 # 4:5 Portrait Ratio for Perfect IG Fit
-    )
+    payload = {
+        "inputs": prompt,
+        "parameters": {
+            "negative_prompt": "nsfw, nude, bad anatomy, bad hands, low resolution, blurry, watermark, signature, text, cropped",
+            "width": 896,
+            "height": 1152
+        }
+    }
     
+    response = requests.post(API_URL, headers=headers, json=payload)
+    
+    if response.status_code != 200:
+        print(f"API Error Response: {response.text}")
+        return False
+        
     # Save original high-res image
     local_filename = "generated_anime.jpg"
-    image.save(local_filename, quality=95)
+    with open(local_filename, "wb") as f:
+        f.write(response.content)
+        
     print("Image Generated Successfully!")
     
-    # Step 2b: Resize to Perfect 4K Instagram Ratio (1080x1350 / 4:5)
+    # Resize to Perfect Instagram Portrait Ratio (1080x1350 / 4:5)
     img = Image.open(local_filename)
     img_resized = img.resize((1080, 1350), Image.Resampling.LANCZOS)
     img_resized.save("final_ig_post.jpg", quality=100)
-    print("Resized to Instagram Fit (1080x1350 Portrait 4K quality)!")
+    print("Resized to Instagram Fit (1080x1350 Portrait)!")
+    return True
 
-# --- STEP 3: UPLOAD TO TEMPORARY PUBLIC HOST (FOR INSTAGRAM API) ---
+# --- STEP 3: UPLOAD TO TEMPORARY PUBLIC HOST ---
 def upload_image_for_public_url():
     print("Uploading image to get temporary public link for Instagram...")
     with open("final_ig_post.jpg", "rb") as file:
@@ -97,7 +107,6 @@ def upload_image_for_public_url():
         
     data = response.json()
     if response.status_code == 200 and "data" in data:
-        # Converting tmpfiles normal view URL to direct image URL
         raw_url = data["data"]["url"]
         direct_url = raw_url.replace("tmpfiles.org/", "tmpfiles.org/dl/")
         print(f"Public Image URL: {direct_url}")
@@ -113,7 +122,10 @@ def publish_to_instagram():
         return
 
     # 1. Generate local 4K Image
-    generate_image()
+    success = generate_image()
+    if not success:
+        print("Image generation failed.")
+        return
     
     # 2. Get Public Direct URL
     image_url = upload_image_for_public_url()
@@ -159,3 +171,4 @@ def publish_to_instagram():
 
 if __name__ == "__main__":
     publish_to_instagram()
+stagram()
