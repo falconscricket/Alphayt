@@ -61,13 +61,14 @@ def generate_random_anime_prompt():
     )
     return final_prompt
 
-# --- STEP 2: GENERATE 4K ANIME IMAGE VIA HUGGING FACE API (WITH RETRY) ---
+# --- STEP 2: GENERATE 4K ANIME IMAGE VIA NEW HUGGING FACE ROUTER API ---
 def generate_image():
     prompt = generate_random_anime_prompt()
     print(f"[{datetime.now()}] Selected Prompt:\n{prompt}\n")
     
-    print("Calling Hugging Face API directly (Animagine XL 3.1)...")
-    API_URL = "https://api-inference.huggingface.co/models/cagliostrolab/animagine-xl-3.1"
+    print("Calling Hugging Face Router API (Animagine XL 3.1)...")
+    # Updated to the new Hugging Face serverless router endpoint
+    API_URL = "https://router.huggingface.co/hf-inference/models/cagliostrolab/animagine-xl-3.1"
     headers = {"Authorization": f"Bearer {HF_TOKEN}"}
     
     payload = {
@@ -177,4 +178,3 @@ def publish_to_instagram():
 
 if __name__ == "__main__":
     publish_to_instagram()
-    
