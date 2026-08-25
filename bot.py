@@ -24,44 +24,104 @@ if not ACCESS_TOKEN:
     print("[ERROR] ACCESS_TOKEN not found in environment variables!")
     exit(1)
 
-BASE_QUALITY = "masterpiece, best quality, ultra detailed, 8k resolution, 4k wallpaper, sharp focus, aesthetic, anime style illustration, 1girl"
-
-HAIR_STYLES = [
-    "short hair with soft bangs", "blonde bob haircut", "long hair tied loosely",
-    "high ponytail", "shoulder-length hair", "twin tails", "hair in a loose braid",
-    "wavy hair", "twin braids"
+# Top 15 Famous Anime Characters
+ANIME_CHARACTERS = [
+    "Asuna from Sword Art Online",
+    "Rem from Re:Zero",
+    "Mikasa from Attack on Titan",
+    "Zero Two from Darling in the Franxx",
+    "Emilia from Re:Zero",
+    "Ram from Re:Zero",
+    "Aqua from Konosuba",
+    "Mitsuri from Demon Slayer",
+    "Daki from Demon Slayer",
+    "Nobara from Jujutsu Kaisen",
+    "Mitsuri Kanroji",
+    "Yor Forger from Spy x Family",
+    "Chizuru from Rent-a-Girlfriend",
+    "Yuna from Is It Wrong to Try to Pick Up Girls",
+    "Saber from Fate series"
 ]
 
-HAIR_COLORS = [
-    "black hair", "blonde hair", "silver hair", "orange hair", "brown hair",
-    "teal hair", "pink hair", "dark green hair", "auburn hair", "lavender hair", "white hair"
+# Romantic Poses
+ROMANTIC_POSES = [
+    "hand near lips in a shy kiss gesture",
+    "hand on cheek with blush",
+    "both hands near face looking surprised",
+    "touching hair seductively",
+    "hand on heart emotional pose",
+    "fingers together shy pose",
+    "winking with flirty hand gesture",
+    "looking back over shoulder romantically",
+    "hand on chest with blush",
+    "walking with wind blowing hair"
 ]
 
-DRESSES = [
-    "wearing a traditional red kimono with floral embroidery",
-    "wearing an oversized cream sweater and long pleated skirt",
-    "wearing a school uniform blazer with pleated skirt",
-    "wearing a long maid-style dress with white apron",
-    "wearing a zip-up hoodie and jogger pants",
-    "wearing a long wool winter coat with a scarf and gloves",
-    "wearing a casual hoodie dress with leggings",
-    "wearing a traditional summer yukata with obi sash",
-    "wearing a cozy oversized cardigan over a turtleneck"
+# Cute Poses
+CUTE_POSES = [
+    "lying down innocently on soft bed",
+    "hugging a pillow adorably",
+    "leaning against wall relaxed",
+    "sitting cross-legged playfully",
+    "jumping with happiness",
+    "tilting head curiously",
+    "tongue out playfully mischievous",
+    "making peace sign cheerfully",
+    "arm stretched yawning sleepily",
+    "sitting on knees innocently",
+    "peeking from behind shyly",
+    "spinning and dancing joyfully"
 ]
 
-POSES_AND_SETTINGS = [
-    "standing under a blooming cherry blossom tree at night with soft moonlight, vertical portrait shot",
-    "sitting by a cafe window with a cup of coffee, cozy indoor atmosphere, vertical portrait shot",
-    "walking through an autumn park with falling maple leaves, golden hour lighting, full body portrait",
-    "standing near a stone fireplace in a rustic wooden cottage, warm firelight glow, vertical shot",
-    "running pose in a city park at sunrise, soft morning mist, dynamic action pose, full body shot",
-    "standing on a snow-covered street at night with warm cafe lights, soft falling snow, vertical shot",
-    "sitting on a rooftop ledge overlooking a city skyline at sunset, vertical angle",
-    "standing near glowing paper lanterns at a night festival, vertical full body shot"
+# Anime Universe Settings/Backgrounds
+ANIME_BACKGROUNDS = [
+    "Tokyo city street with neon lights and modern buildings",
+    "Isekai fantasy village with magical atmosphere",
+    "High school hallway with anime aesthetic",
+    "Beautiful beach resort at sunset",
+    "Enchanted forest with magical trees and glowing lights",
+    "Night festival with paper lanterns",
+    "Magical girl academy with pink and white theme",
+    "Demon slayer mountain temple at dawn",
+    "Cafe with cozy indoor atmosphere and warm lighting",
+    "Cherry blossom garden in full bloom at night",
+    "Starry night rooftop overlooking city",
+    "Ancient shrine with traditional Japanese architecture"
 ]
+
+# Different Anime Styles/Clothing
+ANIME_STYLES = [
+    "wearing school uniform blazer and skirt",
+    "wearing casual modern street clothes",
+    "wearing traditional Japanese kimono",
+    "wearing fantasy adventure armor",
+    "wearing magical girl transformation dress",
+    "wearing elegant ball gown",
+    "wearing casual hoodie and jeans",
+    "wearing shrine maiden outfit",
+    "wearing swimsuit at beach",
+    "wearing traditional maid outfit",
+    "wearing magical academy uniform",
+    "wearing demon slayer corps uniform"
+]
+
+BASE_QUALITY = "masterpiece, best quality, ultra detailed, 8k resolution, 4k wallpaper, sharp focus, aesthetic, anime style illustration, beautiful face, perfect features"
 
 def generate_random_anime_prompt():
-    return f"{BASE_QUALITY}, {random.choice(HAIR_COLORS)} {random.choice(HAIR_STYLES)}, {random.choice(DRESSES)}, {random.choice(POSES_AND_SETTINGS)}, modest fully-covered clothing, clean background, ultra high resolution"
+    character = random.choice(ANIME_CHARACTERS)
+    
+    # Random mix of romantic and cute poses
+    if random.choice([True, False]):
+        pose = random.choice(ROMANTIC_POSES)
+    else:
+        pose = random.choice(CUTE_POSES)
+    
+    background = random.choice(ANIME_BACKGROUNDS)
+    style = random.choice(ANIME_STYLES)
+    
+    prompt = f"{BASE_QUALITY}, {character}, {style}, {pose}, {background}, modest fully-covered clothing where appropriate, clean detailed background, ultra high resolution, anime girl"
+    
+    return prompt
 
 def generate_image():
     prompt = generate_random_anime_prompt()
@@ -80,7 +140,7 @@ def generate_image():
                 "stability-ai/sdxl:39ed52f2a60c3b36b96384b26f1ea0d2f189f60b848c4aa73c60860d3de47e5c",
                 input={
                     "prompt": prompt,
-                    "negative_prompt": "nsfw, nude, bad anatomy, bad hands, low resolution, blurry, watermark, signature, text, cropped",
+                    "negative_prompt": "nsfw, nude, bad anatomy, bad hands, low resolution, blurry, watermark, signature, text, cropped, extra limbs",
                     "width": 896,
                     "height": 1152,
                     "num_outputs": 1,
