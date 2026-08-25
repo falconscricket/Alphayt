@@ -3,8 +3,9 @@ import random
 import time
 import requests
 from PIL import Image
+from huggingface_hub import InferenceClient
 
-TOGETHER_API_KEY = "31a19325791febd8b7a6d91d904961e2c2b7c317cdab95cedf0caa352c762519"
+HF_TOKEN = "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"
 IG_USER_ID = os.getenv("IG_USER_ID")
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 
@@ -38,41 +39,26 @@ def generate_image():
     prompt = f"{BASE_QUALITY}, {character}, {pose}, {bg}, anime girl, modest fully-covered clothing, ultra high resolution"
     print(f"[INFO] Selected Prompt: {prompt[:100]}...")
     
+    # Initialize the official Hugging Face Inference Client
+    client = InferenceClient(
+        provider="hf-inference",
+        api_key=HF_TOKEN,
+    )
+    
     for attempt in range(3):
         try:
-            print(f"[INFO] Attempt {attempt + 1}/3 - Generating image with Together AI...")
+            print(f"[INFO] Attempt {attempt + 1}/3 - Generating image with Hugging Face...")
             
-            response = requests.post(
-                "https://api.together.xyz/inference",
-                headers={"Authorization": f"Bearer {TOGETHER_API_KEY}"},
-                json={
-                    "model": "stabilityai/stable-diffusion-xl-base-1.0",
-                    "prompt": prompt,
-                    "negative_prompt": "nsfw, nude, bad anatomy, bad hands, low resolution, blurry, watermark, signature, text, cropped, extra limbs",
-                    "width": 1080,
-                    "height": 1350,
-                    "steps": 25,
-                    "seed": random.randint(0, 999999)
-                },
-                timeout=120
+            # Use the official text_to_image method
+            image = client.text_to_image(
+                prompt=prompt,
+                model="stabilityai/stable-diffusion-xl-base-1.0"
             )
             
-            if response.status_code == 200:
-                data = response.json()
-                if "output" in data and "choices" in data["output"]:
-                    img_url = data["output"]["choices"][0]["image_url"]
-                    print(f"[SUCCESS] Image generated: {img_url}")
-                    
-                    img_response = requests.get(img_url, timeout=30)
-                    if img_response.status_code == 200:
-                        with open("generated_anime.jpg", "wb") as f:
-                            f.write(img_response.content)
-                        print("[INFO] Image downloaded successfully")
-                        return True
-            else:
-                print(f"[ERROR] Attempt {attempt + 1} failed: Status {response.status_code}")
-                error_data = response.json() if response.text else {}
-                print(f"[ERROR] Details: {error_data}")
+            # Save the returned PIL Image
+            image.save("generated_anime.jpg")
+            print("[SUCCESS] Image generated and saved!")
+            return True
                 
         except Exception as e:
             print(f"[ERROR] Attempt {attempt + 1} failed: {str(e)}")
@@ -158,3 +144,4 @@ def publish_to_instagram():
 
 if __name__ == "__main__":
     publish_to_instagram()
+    
