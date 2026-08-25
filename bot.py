@@ -6,12 +6,10 @@ from datetime import datetime
 from PIL import Image
 from huggingface_hub import InferenceClient
 
-# --- CONFIGURATION (Environment Variables from GitHub Secrets) ---
 IG_USER_ID = os.getenv("IG_USER_ID")
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-# --- STEP 1: RANDOM PROMPT BUILDER COMPONENTS ---
 BASE_QUALITY = "masterpiece, best quality, ultra detailed, 8k resolution, 4k wallpaper, sharp focus, aesthetic, anime style illustration, 1girl"
 
 HAIR_STYLES = [
@@ -49,32 +47,18 @@ POSES_AND_SETTINGS = [
 ]
 
 def generate_random_anime_prompt():
-    hair_style = random.choice(HAIR_STYLES)
-    hair_color = random.choice(HAIR_COLORS)
-    dress = random.choice(DRESSES)
-    setting = random.choice(POSES_AND_SETTINGS)
-    
-    final_prompt = (
-        f"{BASE_QUALITY}, {hair_color} {hair_style}, "
-        f"{dress}, {setting}, "
-        "modest fully-covered clothing, clean background, ultra high resolution"
-    )
-    return final_prompt
+    return f"{BASE_QUALITY}, {random.choice(HAIR_COLORS)} {random.choice(HAIR_STYLES)}, {random.choice(DRESSES)}, {random.choice(POSES_AND_SETTINGS)}, modest fully-covered clothing, clean background, ultra high resolution"
 
-# --- STEP 2: GENERATE VIA HUGGING FACE (WITH COLD-START RETRY) ---
 def generate_image():
     prompt = generate_random_anime_prompt()
-    print(f"[{datetime.now()}] Selected Prompt:\n{prompt}\n")
-    
-    print("Connecting to Hugging Face Client...")
+    print(f"Prompt: {prompt}")
     client = InferenceClient(token=HF_TOKEN)
     
-    max_retries = 3
     image = None
-    
-    for attempt in range(max_retries):
+    for attempt in range(5):
         try:
-            print(f"Generation attempt {attempt + 1}...")
+            print(f"Attempt {attempt + 1}...")
+            time.sleep(10) # Wait for model to wake up from cold start
             image = client.text_to_image(
                 prompt=prompt,
                 model="cagliostrolab/animagine-xl-3.1",
@@ -85,90 +69,36 @@ def generate_image():
             if image:
                 break
         except Exception as e:
-            print(f"Attempt {attempt + 1} failed: {e}")
-            if attempt < max_retries - 1:
-                print("Model might be loading (Cold Start). Waiting 15 seconds before retry...")
-                time.sleep(15)
-            else:
-                print("All generation retries failed.")
-                return False
-                
+            print(f"Error: {e}")
+            
     if not image:
         return False
         
-    local_filename = "generated_anime.jpg"
-    image.save(local_filename, quality=95)
-    print("Image Generated Successfully!")
-    
-    img = Image.open(local_filename)
-    img_resized = img.resize((1080, 1350), Image.Resampling.LANCZOS)
-    img_resized.save("final_ig_post.jpg", quality=100)
-    print("Resized to Instagram Fit (1080x1350 Portrait)!")
+    image.save("generated_anime.jpg", quality=95)
+    img = Image.open("generated_anime.jpg")
+    img.resize((1080, 1350), Image.Resampling.LANCZOS).save("final_ig_post.jpg", quality=100)
     return True
 
-# --- STEP 3: UPLOAD TO TEMPORARY PUBLIC HOST ---
 def upload_image_for_public_url():
-    print("Uploading image to get temporary public link for Instagram...")
     with open("final_ig_post.jpg", "rb") as file:
         response = requests.post("https://tmpfiles.org/api/v1/upload", files={"file": file})
-        
     data = response.json()
     if response.status_code == 200 and "data" in data:
-        raw_url = data["data"]["url"]
-        direct_url = raw_url.replace("tmpfiles.org/", "tmpfiles.org/dl/")
-        print(f"Public Image URL: {direct_url}")
-        return direct_url
-    else:
-        print("Failed to upload image to host.")
-        return None
+        return data["data"]["url"].replace("tmpfiles.org/", "tmpfiles.org/dl/")
+    return None
 
-# --- STEP 4: PUBLISH TO INSTAGRAM ---
 def publish_to_instagram():
-    if not IG_USER_ID or not ACCESS_TOKEN or not HF_TOKEN:
-        print("Error: Missing Secrets!")
-        return
-
-    success = generate_image()
-    if not success:
-        print("Image generation failed.")
-        return
-    
+    if not generate_image(): return
     image_url = upload_image_for_public_url()
-    if not image_url:
-        print("Posting cancelled due to image upload error.")
-        return
+    if not image_url: return
 
-    print("Sending post request to Instagram Graph API...")
     container_url = f"https://graph.facebook.com/v18.0/{IG_USER_ID}/media"
-    payload = {
-        'image_url': image_url,
-        'caption': "Rate this 4K anime masterpiece! 🌸✨\n\n#animeart #aiart #animelover #otaku #kawaii #animegirl",
-        'access_token': ACCESS_TOKEN
-    }
+    res = requests.post(container_url, data={'image_url': image_url, 'caption': "Rate this 4K anime masterpiece! 🌸✨\n\n#animeart #aiart #animelover #otaku #kawaii #animegirl", 'access_token': ACCESS_TOKEN}).json()
     
-    response = requests.post(container_url, data=payload).json()
-    print("Container Response:", response)
-    
-    if 'id' not in response:
-        print("Failed to create Instagram media container.")
-        return
-        
-    creation_id = response['id']
-    time.sleep(10)
-    
-    publish_url = f"https://graph.facebook.com/v18.0/{IG_USER_ID}/media_publish"
-    publish_payload = {
-        'creation_id': creation_id,
-        'access_token': ACCESS_TOKEN
-    }
-    
-    publish_response = requests.post(publish_url, data=publish_payload).json()
-    print("Publish Response:", publish_response)
-    
-    if 'id' in publish_response:
-        print("🎉 Successfully published 4K Anime post to Instagram!")
-    else:
-        print("Failed to publish post to Instagram.")
+    if 'id' in res:
+        time.sleep(10)
+        requests.post(f"https://graph.facebook.com/v18.0/{IG_USER_ID}/media_publish", data={'creation_id': res['id'], 'access_token': ACCESS_TOKEN})
+        print("🎉 Published successfully!")
 
 if __name__ == "__main__":
     publish_to_instagram()
